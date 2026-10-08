@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#0f5132">
+<meta name="theme-color" content="#0b3d26">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -12,16 +12,56 @@
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<link rel="stylesheet" href="style.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #0b3d26; overflow: hidden; }
+  body { box-sizing: border-box; padding-top: env(safe-area-inset-top); }
+  iframe { display: block; width: 100%; height: 100%; border: 0; background: #f4f6f5; }
+  .msg { color: #fff; font-family: -apple-system, "Segoe UI", Tahoma, sans-serif; text-align: center; padding: 48px 20px; font-size: 18px; line-height: 1.8; }
+  .msg b { display: block; font-size: 28px; margin-bottom: 12px; }
+</style>
 </head>
 <body>
-<header class="banner">
-  <div class="bt">تحضير الطابور</div>
-  <div class="bs" id="who"></div>
-  <div class="bs" id="day"></div>
-</header>
-<main id="app"><p class="muted center">جارٍ التحميل…</p></main>
-<div id="toast" class="toast" hidden><span id="toastText"></span><button id="undo" type="button">تراجع</button></div>
-<script src="app.js"></script>
+<script>
+/* غلافُ التطبيق المثبَّت: الأيقونةُ والتثبيت وقفلُ الشاشة هنا · والواجهةُ نفسُها في Apps Script داخل الإطار */
+(function () {
+  var ENGINE = 'https://script.google.com/macros/s/AKfycbyrGD6_YuWOT439G1RxY-GVze0-mn0u6XuQCoSks_L4bBHRyUKI89ODTdBFUq3r2zSnqg/exec';
+  var k = '', m = location.search.match(/[?&]k=([^&#]+)/);
+  try {
+    if (m) { k = decodeURIComponent(m[1]); localStorage.setItem('tabour_k', k); }
+    else k = localStorage.getItem('tabour_k') || '';
+  } catch (e) {
+    if (m) k = decodeURIComponent(m[1]);
+  }
+  if (!k) {
+    document.body.innerHTML = '<div class="msg"><b>تحضير الطابور</b>افتح التطبيق من رابطك الخاصّ.</div>';
+    return;
+  }
+  var f = document.createElement('iframe');
+  f.title = 'تحضير الطابور';
+  f.src = ENGINE + '?p=app&k=' + encodeURIComponent(k);
+  document.body.appendChild(f);
+
+  /* الإطارُ يقول متى يبدأ التحضيرُ وينتهي — فتبقى الشاشةُ مضاءةً في وقته وحدَه */
+  var lock = null, want = false;
+  function apply() {
+    if (!('wakeLock' in navigator)) return;
+    if (want && !lock && !document.hidden) {
+      navigator.wakeLock.request('screen').then(function (l) {
+        lock = l;
+        l.addEventListener('release', function () { lock = null; });
+      }).catch(function () {});
+    } else if (!want && lock) {
+      lock.release();
+      lock = null;
+    }
+  }
+  window.addEventListener('message', function (e) {
+    if (e.data && typeof e.data.tabourWake === 'boolean') { want = e.data.tabourWake; apply(); }
+  });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) apply(); });
+
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(function () {});
+})();
+</script>
 </body>
 </html>

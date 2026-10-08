@@ -1,6 +1,6 @@
-/* عاملُ الخدمة: يحفظ هيكلَ التطبيق ليفتح بسرعة · وطلباتُ البيانات تذهب إلى المحرّك مباشرةً ولا تُحفظ */
-var CACHE = 'tabour-v1';
-var SHELL = ['./', 'index.html', 'app.js', 'style.css', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
+/* عاملُ الخدمة: يحفظ الغلافَ ليفتح بسرعة · والواجهةُ والبياناتُ من Apps Script مباشرةً ولا تُحفظ */
+var CACHE = 'tabour-v2';
+var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
   e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }));
