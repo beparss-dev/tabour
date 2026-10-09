@@ -245,21 +245,30 @@ function schedule() {
   pollTimer = setTimeout(refresh, fast ? 5000 : 60000);
 }
 
+/* خادمُ Google يتأخّر أحياناً دقائق (رأيناه) — فلا يبقى المستخدمُ أمام شاشةٍ صامتة */
+function slowGuard() {
+  var t = setTimeout(function () { toast('الخادمُ بطيءٌ الآن — انتظر قليلاً ولا تضغط مرّةً أخرى'); }, 12000);
+  return function () { clearTimeout(t); };
+}
 function loadRange(from, to) {
   loading();
+  var done = slowGuard();
   return api8('range', { from: from, to: to }).then(function (d) {
+    done();
     if (d.error) { toast(d.error); return; }
     R = d.data;
     render(true);
-  }).catch(function () { toast('تعذّر الاتصال'); });
+  }).catch(function () { done(); toast('تعذّر الاتصال'); });
 }
 function loadTotals() {
   loading();
+  var done = slowGuard();
   return api8('totals', {}).then(function (d) {
+    done();
     if (d.error) { toast(d.error); return; }
     T = d.data;
     render(true);
-  }).catch(function () { toast('تعذّر الاتصال'); });
+  }).catch(function () { done(); toast('تعذّر الاتصال'); });
 }
 function loading() { $('app').innerHTML = '<p class="muted center">جارٍ التحميل…</p>'; }
 
@@ -693,13 +702,15 @@ function write(action, p, btn, okMsg) {
   if (btn) btn.disabled = true;
   var from = VIEW === 'follow' ? FDATE : R.from, to = VIEW === 'follow' ? FDATE : R.to;
   p.from = from; p.to = to;
+  var done = slowGuard();
   return api8(action, p).then(function (d) {
+    done();
     if (d.error) { toast(d.error); if (btn) btn.disabled = false; return; }
     R = d.data;
     OPEN = null;
     render(true);
     if (okMsg) toast(okMsg);
-  }).catch(function () { if (btn) btn.disabled = false; toast('تعذّر الاتصال'); });
+  }).catch(function () { done(); if (btn) btn.disabled = false; toast('تعذّر الاتصال — تأكّد ثمّ أعد المحاولة'); });
 }
 function issuePrefix() { var h = hp(S.today); return h.d + '/' + h.m + '/' + String(h.y).slice(-2); }
 
