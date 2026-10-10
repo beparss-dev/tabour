@@ -356,12 +356,15 @@ function markHtml() {
   h += '</div>';
   if (S.present.length) {
     h += '<section class="green"><h2>حضر (' + S.present.length + ')</h2>' + S.present.slice().reverse().map(function (p) {
-      return '<div class="item"><span>' + esc(p.name) + '<small>' + p.time + (p.by ? ' · رصده ' + esc(p.by) : '') + '</small></span></div>';
+      return '<div class="item"><span>' + esc(p.name) + '<small>' + presentLine(p) + '</small></span></div>';
     }).join('') + '</section>';
   }
   h += '<button class="toggle" data-go="report">📊 التقرير</button>';
   return h;
 }
+
+/* سطرُ الحاضر: وقتُه ومَن رصده — أو «ثبت حضوره بقرار المدير» حين صُحّح الرصد */
+function presentLine(p) { return p.note ? esc(p.note) : p.time + (p.by ? ' · رصده ' + esc(p.by) : ''); }
 
 function nameBtn(n, exc) {
   var w = words(n);
@@ -387,7 +390,7 @@ function reportHtml() {
     return '<div class="item"><span>' + esc(n) + '</span></div>';
   }).join('') : '<p class="muted">لا أحد</p>') + '</section>';
   h += '<section class="green"><h2>حضر (' + S.present.length + ')</h2>' + (S.present.length ? S.present.map(function (p) {
-    return '<div class="item"><span>' + esc(p.name) + '<small>' + p.time + (p.by ? ' · رصده ' + esc(p.by) : '') + '</small></span>' +
+    return '<div class="item"><span>' + esc(p.name) + '<small>' + presentLine(p) + '</small></span>' +
       (A ? '<button class="act" data-u="1" data-n="' + esc(p.name) + '">إلغاء التحضير</button>' : '') + '</div>';
   }).join('') : '<p class="muted">لا أحد</p>') + '</section>';
   return h;
@@ -445,7 +448,7 @@ function rangeTable(rows) {
 /* 🔒 الآن للطابور وحدَه (قرار محمد ١٠ أكتوبر: «حصرا على موضوع الطابور الصباحي فقط») —
    «تأخر · غائب · انصراف مبكر» مبنيّةٌ ومفحوصة، وتعود بجعل هذا false يومَ يُقرَّر */
 var ONLY_LINE = false;
-var STC = { 'مسجّلة': '', 'صدرت': 'amber', 'مرفوعة للمدير': 'amber', 'عذر مقبول': 'green', 'يُحسم': 'red', 'ملغاة': '' };
+var STC = { 'مسجّلة': '', 'صدرت': 'amber', 'مرفوعة للمدير': 'amber', 'عذر مقبول': 'green', 'يُحسم': 'red', 'ثبت حضوره': 'green', 'ملغاة': '' };
 function kindName(k) { return k === 'عدم تواجد' ? 'عدم حضور الطابور' : k; }
 function caseLine(c) {
   var t = c.kind === 'عدم تواجد' ? c.from + ' ← ' + c.to : c.kind === 'تأخر' ? 'حضر ' + c.from : c.kind === 'انصراف مبكر' ? 'انصرف ' + c.from : '';
@@ -486,7 +489,7 @@ function followHtml() {
     if (c.status === 'مسجّلة' && c.kind !== 'غياب') a += '<button class="act main" data-issue="' + c.id + '">إصدار المساءلة</button>';
     if (c.status === 'صدرت') a += '<button class="act" data-one="' + c.id + '">معاينة وطباعة</button><button class="act main" data-send="' + c.id + '">رفع للمدير</button>';
     /* الإصدارُ يرفعها للمدير مباشرةً: تُطبع وتُوزَّع وتعود بالعذر، والمديرُ يقرّر متى وصلته الورقة */
-    if (c.status === 'مرفوعة للمدير' || c.status === 'عذر مقبول' || c.status === 'يُحسم') a += '<button class="act" data-one="' + c.id + '">معاينة وطباعة</button>';
+    if (c.status === 'مرفوعة للمدير' || c.status === 'عذر مقبول' || c.status === 'يُحسم' || c.status === 'ثبت حضوره') a += '<button class="act" data-one="' + c.id + '">معاينة وطباعة</button>';
     /* الإلغاءُ تصحيحٌ لخطأ التسجيل قبل الإصدار فقط — بعده القرارُ للمدير لا للوكيل */
     if (c.status === 'مسجّلة') a += '<button class="act warn" data-cancel="' + c.id + '">إلغاء (خطأ تسجيل)</button>';
     return '<div class="item"><span>' + esc(c.name) + '<span class="pill ' + (STC[c.status] || '') + '">' + esc(c.status) + '</span><small>' + caseLine(c) +
@@ -500,9 +503,9 @@ function followHtml() {
 /* المعلَّقُ يبقى حتى يقرّر — مجمَّعاً بالأيّام، فتصله ورقةُ يومٍ بعد يومين فيجد اسمَه في يومه */
 function approveHtml() {
   var wait = R.cases.filter(function (c) { return c.status === 'مرفوعة للمدير'; });
-  var done = R.cases.filter(function (c) { return c.status === 'عذر مقبول' || c.status === 'يُحسم'; }).slice(-30).reverse();
+  var done = R.cases.filter(function (c) { return c.status === 'عذر مقبول' || c.status === 'يُحسم' || c.status === 'ثبت حضوره'; }).slice(-30).reverse();
   var h = '<div class="nav"><button data-reload="1">تحديث</button></div>';
-  h += '<p class="muted">بعد أن تصلك ورقةُ المساءلة بعذر المعلّم: اختر قرارك كما في النموذج — «عذر مقبول» فتسقط الدقائق، أو «عذر غير مقبول ويحسم عليه» فتُضاف إلى مدّة الحسم.</p>';
+  h += '<p class="muted">بعد أن تصلك ورقةُ المساءلة بعذر المعلّم: اختر قرارك كما في النموذج — «عذر مقبول» فتسقط الدقائق، أو «عذر غير مقبول ويحسم عليه» فتُضاف إلى مدّة الحسم. وإن ثبت أنّه حضر ولم يره الراصدون فـ«ثبت حضوره — لم يُرصد»: ينتقل إلى «حضر» بلا دقيقة.</p>';
   if (!wait.length) h += '<section class="amber"><h2>بانتظار قرارك (0)</h2><p class="muted">لا شيء بانتظارك ✓</p></section>';
   var byDay = {};
   wait.forEach(function (c) { (byDay[c.date] = byDay[c.date] || []).push(c); });
@@ -511,7 +514,8 @@ function approveHtml() {
       return '<div class="item"><span>' + esc(c.name) + '<small>' + caseLine(c) + '</small></span><span class="acts">' +
         '<button class="act" data-one="' + c.id + '">المساءلة</button>' +
         '<button class="act main" data-decide="1" data-id="' + c.id + '">عذر مقبول</button>' +
-        '<button class="act warn" data-decide="0" data-id="' + c.id + '">غير مقبول — يُحسم</button></span></div>';
+        '<button class="act warn" data-decide="0" data-id="' + c.id + '">غير مقبول — يُحسم</button>' +
+        '<button class="act" data-decide="2" data-id="' + c.id + '">ثبت حضوره — لم يُرصد</button></span></div>';
     }).join('') + '</section>';
   });
   if (done.length) {
@@ -627,7 +631,7 @@ function doExport(kind) {
     if (kind === 'day-csv') {
       var rows = [['الحالة', 'الاسم', 'الوقت', 'بيد']];
       S.absent.forEach(function (n) { rows.push(['لم يحضر', n, '', '']); });
-      S.present.forEach(function (p) { rows.push(['حضر', p.name, p.time, p.by]); });
+      S.present.forEach(function (p) { rows.push(['حضر', p.name, p.note || p.time, p.by]); });
       download('الطابور-' + S.date + '.csv', 'text/csv;charset=utf-8', csv(rows));
     } else {
       download('الطابور-' + S.date + '.doc', 'application/msword', doc(head, '<h2>' + esc(head) + '</h2><h3>لم يحضر (' + S.absent.length + ')</h3><table><tr><th>م</th><th>الاسم</th></tr>' +
@@ -790,7 +794,11 @@ $('app').addEventListener('click', function (e) {
   }
   if (b.hasAttribute('data-send')) { write('send', { id: g('data-send') }, b, 'رُفعت للمدير'); return; }
   if (b.hasAttribute('data-cancel')) { write('cancel', { id: g('data-cancel') }, b, 'أُلغيت'); return; }
-  if (b.hasAttribute('data-decide')) { write('decide', { id: g('data-id'), accept: g('data-decide') === '1' }, b, 'سُجّل قرارك'); return; }
+  if (b.hasAttribute('data-decide')) {
+    var dv = g('data-decide');
+    write('decide', { id: g('data-id'), accept: dv === '1', present: dv === '2' }, b, dv === '2' ? 'ثبت حضوره — نُقل إلى «حضر» بلا دقيقة' : 'سُجّل قرارك');
+    return;
+  }
   if (b.hasAttribute('data-one')) { var c = byId(g('data-one')); if (c) showPrint([c], false); return; }
   if (b.hasAttribute('data-pickall')) { printable().forEach(function (c) { PICK[c.id] = true; }); render(true); return; }
   if (b.hasAttribute('data-picknone')) { PICK = {}; render(true); return; }
