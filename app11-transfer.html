@@ -34,7 +34,7 @@
   @media (max-width: 440px) {
     .hs { grid-row: 1; font-size: 14px; } .hlogo { grid-row: 1; width: 84px; } .ht { grid-row: 1; align-self: center; }
     .hd2 { grid-column: 1 / -1; grid-row: 2; text-align: center; margin-top: 8px; display: flex; flex-wrap: wrap; justify-content: center; column-gap: 6px; }
-    .hd2 .bs { margin: 0; } .hd2 .bs + .bs::before { content: '· '; }
+    .hd2 .bs { margin: 0; } .hd2 .bs + .bs::before { content: '— '; } /* لا «·» — تُقرأ صفراً «٠» بجوار الأرقام العربيّة */
     .bt { font-size: 18px; } .bs { font-size: 11.5px; }
   }
 
