@@ -485,6 +485,7 @@ function followHtml() {
     var a = '';
     if (c.status === 'مسجّلة' && c.kind !== 'غياب') a += '<button class="act main" data-issue="' + c.id + '">إصدار المساءلة</button>';
     if (c.status === 'صدرت') a += '<button class="act" data-one="' + c.id + '">معاينة وطباعة</button><button class="act main" data-send="' + c.id + '">رفع للمدير</button>';
+    /* الإصدارُ يرفعها للمدير مباشرةً: تُطبع وتُوزَّع وتعود بالعذر، والمديرُ يقرّر متى وصلته الورقة */
     if (c.status === 'مرفوعة للمدير' || c.status === 'عذر مقبول' || c.status === 'يُحسم') a += '<button class="act" data-one="' + c.id + '">معاينة وطباعة</button>';
     /* الإلغاءُ تصحيحٌ لخطأ التسجيل قبل الإصدار فقط — بعده القرارُ للمدير لا للوكيل */
     if (c.status === 'مسجّلة') a += '<button class="act warn" data-cancel="' + c.id + '">إلغاء (خطأ تسجيل)</button>';
@@ -496,18 +497,23 @@ function followHtml() {
 }
 
 /* ===== الاعتمادات — مدير المدرسة ===== */
+/* المعلَّقُ يبقى حتى يقرّر — مجمَّعاً بالأيّام، فتصله ورقةُ يومٍ بعد يومين فيجد اسمَه في يومه */
 function approveHtml() {
   var wait = R.cases.filter(function (c) { return c.status === 'مرفوعة للمدير'; });
   var done = R.cases.filter(function (c) { return c.status === 'عذر مقبول' || c.status === 'يُحسم'; }).slice(-30).reverse();
   var h = '<div class="nav"><button data-reload="1">تحديث</button></div>';
-  h += '<section class="amber"><h2>بانتظار قرارك (' + wait.length + ')</h2>';
-  h += wait.length ? wait.map(function (c) {
-    return '<div class="item"><span>' + esc(c.name) + '<small>' + esc(weekday(c.date) + ' ' + hShort(c.date)) + ' · ' + caseLine(c) + '</small></span><span class="acts">' +
-      '<button class="act" data-one="' + c.id + '">المساءلة</button>' +
-      '<button class="act main" data-decide="1" data-id="' + c.id + '">عذر مقبول</button>' +
-      '<button class="act warn" data-decide="0" data-id="' + c.id + '">غير مقبول — يُحسم</button></span></div>';
-  }).join('') : '<p class="muted">لا شيء بانتظارك ✓</p>';
-  h += '</section>';
+  h += '<p class="muted">بعد أن تصلك ورقةُ المساءلة بعذر المعلّم: اختر قرارك كما في النموذج — «عذر مقبول» فتسقط الدقائق، أو «عذر غير مقبول ويحسم عليه» فتُضاف إلى مدّة الحسم.</p>';
+  if (!wait.length) h += '<section class="amber"><h2>بانتظار قرارك (0)</h2><p class="muted">لا شيء بانتظارك ✓</p></section>';
+  var byDay = {};
+  wait.forEach(function (c) { (byDay[c.date] = byDay[c.date] || []).push(c); });
+  Object.keys(byDay).sort().reverse().forEach(function (d) {
+    h += '<section class="amber"><h2>' + esc(weekday(d) + ' ' + hShort(d)) + ' — بانتظار قرارك (' + byDay[d].length + ')</h2>' + byDay[d].map(function (c) {
+      return '<div class="item"><span>' + esc(c.name) + '<small>' + caseLine(c) + '</small></span><span class="acts">' +
+        '<button class="act" data-one="' + c.id + '">المساءلة</button>' +
+        '<button class="act main" data-decide="1" data-id="' + c.id + '">عذر مقبول</button>' +
+        '<button class="act warn" data-decide="0" data-id="' + c.id + '">غير مقبول — يُحسم</button></span></div>';
+    }).join('') + '</section>';
+  });
   if (done.length) {
     h += '<section><h2>آخر القرارات</h2>' + done.map(function (c) {
       return '<div class="item"><span>' + esc(c.name) + '<span class="pill ' + STC[c.status] + '">' + esc(c.status) + '</span><small>' +
@@ -528,7 +534,7 @@ function totalsTable() {
   return '<table class="t"><tr><th>م</th><th>الاسم</th><th>المحسوم</th><th>عند المدير</th><th>الحال</th></tr>' + T.list.map(function (x, i) {
     var days = Math.floor(x.cut / 420);
     var flag = x.cut >= 420 ? '<span class="pill red">بلغ حدَّ الحسم: ' + days + ' يوم</span>' : x.cut >= 180 ? '<span class="pill amber">يستحقّ تنبيهاً</span>' : '';
-    return '<tr><td class="n">' + (i + 1) + '</td><td>' + esc(x.name) + '</td><td class="n">' + hm(x.cut) + '</td><td class="n">' + (x.pending ? hm(x.pending) : '—') + '</td><td>' + flag + '</td></tr>';
+    return '<tr><td class="n">' + (i + 1) + '</td><td>' + esc(x.name) + '</td><td class="n">' + (x.cut ? hm(x.cut) : '—') + '</td><td class="n">' + (x.pending ? hm(x.pending) : '—') + '</td><td>' + flag + '</td></tr>';
   }).join('') + '</table>';
 }
 
@@ -777,10 +783,10 @@ $('app').addEventListener('click', function (e) {
     if (!$('eln').value) { toast('اختر الاسم'); return; }
     write('add', { date: FDATE, name: $('eln').value, kind: 'انصراف مبكر', at: $('elt').value }, b); return;
   }
-  if (b.hasAttribute('data-issue')) { write('issue', { ids: [g('data-issue')], prefix: issuePrefix() }, b, 'صدرت المساءلة'); return; }
+  if (b.hasAttribute('data-issue')) { write('issue', { ids: [g('data-issue')], prefix: issuePrefix() }, b, 'صدرت المساءلة ورُفعت للمدير'); return; }
   if (b.hasAttribute('data-issueall')) {
     var ids = activeCases(FDATE).filter(function (c) { return c.status === 'مسجّلة' && c.kind !== 'غياب'; }).map(function (c) { return c.id; });
-    write('issue', { ids: ids, prefix: issuePrefix() }, b, 'صدرت ' + ids.length + ' مساءلة'); return;
+    write('issue', { ids: ids, prefix: issuePrefix() }, b, 'صدرت ' + ids.length + ' مساءلة ورُفعت للمدير — اطبعها من «المساءلات»'); return;
   }
   if (b.hasAttribute('data-send')) { write('send', { id: g('data-send') }, b, 'رُفعت للمدير'); return; }
   if (b.hasAttribute('data-cancel')) { write('cancel', { id: g('data-cancel') }, b, 'أُلغيت'); return; }
