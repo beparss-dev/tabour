@@ -21,7 +21,7 @@
     -webkit-print-color-adjust: exact; print-color-adjust: exact;
   }
   /* الترويسة: المدرسةُ يميناً · شعارُ الوزارة وسطاً · التطبيقُ والشاشةُ والتاريخُ والساعةُ يساراً (قرار محمد ١٠ أكتوبر) */
-  .hb { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 10px; max-width: 900px; margin: 0 auto; }
+  .hb { display: grid; grid-template-columns: 1fr auto 1fr; grid-template-rows: auto auto; align-items: center; column-gap: 10px; max-width: 868px; margin: 0 auto; } /* ٨٦٨ = عرضُ المحتوى تحتها (٩٠٠ − الحاشيتين) فتتطابق الحوافّ */
   .hs { grid-column: 1; grid-row: 1 / span 2; text-align: right; font-size: 16px; font-weight: 800; line-height: 1.45; }
   .hs span { display: block; }
   .hlogo { grid-column: 2; grid-row: 1 / span 2; justify-self: center; display: block; width: 124px; height: auto; filter: brightness(0) invert(1); }
@@ -87,7 +87,7 @@
   .tabs button.on { background: var(--g); color: #fff; border-color: var(--g); }
 
   .chips { display: flex; gap: 8px; margin: 12px 0; }
-  .chip { flex: 1 1 0; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; text-align: center; font-size: 13px; }
+  .chip { flex: 1 1 0; display: flex; flex-direction: column; justify-content: space-between; background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 8px 4px; text-align: center; font-size: 13px; } /* الرقمُ في القاع — فتصطفّ الأرقامُ ولو التفّ عنوان */
   .chip b { display: block; font-size: 22px; }
   .nav { display: flex; gap: 8px; flex-wrap: wrap; }
   .nav button { flex: 1; border: 0; border-radius: 12px; background: #e3e9e6; font-size: 15px; padding: 12px 6px; min-width: 90px; }
@@ -100,6 +100,15 @@
   .hd { display: inline-flex; align-items: center; gap: 4px; flex-wrap: wrap; }
   .hd b { min-width: 24px; }
   .hd small { flex-basis: 100%; color: var(--muted); font-size: 12px; padding-right: 28px; }
+  .hw { flex-wrap: nowrap; max-width: 100%; } .hw select { min-width: 0; max-width: 290px; } /* «الأسبوع» وقائمتُه في سطرٍ واحد كـ«من» و«إلى» */
+  .grp { display: inline-flex; align-items: center; gap: 8px; flex-wrap: nowrap; } /* «وقت الانصراف» وخانتُه وزرُّه لا تتفرّق */
+  .nw { white-space: nowrap; }
+  /* الجوّال: الأزرارُ الأربعة اثنين اثنين لا ثلاثةً وواحداً · والجدولُ أصغرُ قليلاً فتتّسع الأسماء */
+  @media (max-width: 440px) {
+    .nav:has(> :nth-child(4):last-child) { display: grid; grid-template-columns: 1fr 1fr; }
+    .item .acts:has(> :nth-child(4):last-child) { display: grid; grid-template-columns: 1fr 1fr; width: 100%; }
+    table.t { font-size: 13px; } table.t th, table.t td { padding: 6px 5px; }
+  }
   .period { font-size: 14px; color: var(--g3); background: #e3f3ea; border-radius: 10px; padding: 8px 12px; margin: 8px 0; text-align: center; }
 
   table.t { width: 100%; border-collapse: collapse; font-size: 15px; background: #fff; }
@@ -260,6 +269,8 @@ function weeksOf(t) {
 function termOf(d) { return CAL.terms.filter(function (t) { return d >= t.from && d <= t.to; })[0] || null; }
 function weekOf(d) { var t = termOf(d); return t ? weeksOf(t).filter(function (w) { return d >= w.sun && d <= addDays(w.sun, 6); })[0] || null : null; }
 function hdm(d) { var h = hp(d); return ar(h.d) + ' ' + HMONTHS[h.m - 1]; }
+/* مدى الأسبوع مختصراً: «٢٣–٢٧ ربيع الآخر» في الشهر الواحد · و«٣٠ ربيع الآخر – ٤ جمادى الأولى» بين شهرين */
+function hRange(a, b) { var x = hp(a), y = hp(b); return x.m === y.m ? ar(x.d) + '–' + ar(y.d) + ' ' + HMONTHS[x.m - 1] : hdm(a) + ' – ' + hdm(b); }
 
 function rangeFor(key, today) {
   if (/^term\d$/.test(key)) { var tr = CAL.terms[+key.slice(4)]; return [tr.from, tr.to < today ? tr.to : today]; }
@@ -476,16 +487,16 @@ function periodHtml() {
   var wk = CAL.terms.filter(function (t) { return t.from <= S.today; }).reverse().map(function (t) {
     return '<optgroup label="' + t.name + '">' + weeksOf(t).filter(function (w) { return w.from <= S.today; }).reverse().map(function (w) {
       var to = w.to > S.today ? S.today : w.to;
-      return '<option value="' + w.from + '|' + to + '"' + (RANGE.key === 'wk' && RANGE.from === w.from ? ' selected' : '') + '>الأسبوع ' + ar(w.n) + ' — ' + hdm(w.from) + ' – ' + hdm(w.to) + '</option>';
+      return '<option value="' + w.from + '|' + to + '"' + (RANGE.key === 'wk' && RANGE.from === w.from ? ' selected' : '') + '>الأسبوع ' + ar(w.n) + ' — ' + hRange(w.from, w.to) + '</option>';
     }).join('') + '</optgroup>';
   }).join('');
   return '<div class="quick">' + q.map(function (x) {
     return '<button data-q="' + x[0] + '"' + (RANGE.key === x[0] ? ' class="on"' : '') + '>' + x[1] + '</button>';
   }).join('') + '</div>' +
-    (wk ? '<div class="dates"><span class="hd"><b>الأسبوع</b><select id="wk" data-wk="1"><option value="">اختر الأسبوع…</option>' + wk + '</select></span></div>' : '') +
+    (wk ? '<div class="dates"><span class="hd hw"><b>الأسبوع</b><select id="wk" data-wk="1"><option value="">اختر الأسبوع…</option>' + wk + '</select></span></div>' : '') +
     '<div class="dates">' + hDateHtml('f', 'من', RANGE.from) + hDateHtml('t', 'إلى', RANGE.to) +
     '<button class="act main" data-apply="1">عرض</button></div>' +
-    '<div class="period">📅 ' + periodText(R.from, R.to) + '</div>';
+    '<div class="period">📅 ' + periodUI(R.from, R.to) + '</div>';
 }
 /* البحثُ بالتاريخ: هجريٌّ أساساً والميلاديُّ صغيرٌ تحته (قرار محمد ١٠ أكتوبر — «الحسم ما يمشي إلا بالتاريخ الهجري») */
 var HMONTHS = ['محرم', 'صفر', 'ربيع الأول', 'ربيع الآخر', 'جمادى الأولى', 'جمادى الآخرة', 'رجب', 'شعبان', 'رمضان', 'شوال', 'ذو القعدة', 'ذو الحجة'];
@@ -511,16 +522,20 @@ function hToG(y, m, d) {
 function hSel(p) { return hToG(+$(p + 'y').value, +$(p + 'm').value, +$(p + 'd').value); }
 function nCases(n) { return n === 1 ? 'مساءلة واحدة' : n === 2 ? 'مساءلتان' : n <= 10 ? n + ' مساءلات' : n + ' مساءلة'; }
 
-function periodText(f, t) {
-  var s = f === t ? weekday(f) + ' ' + fmt(f, 'islamic-umalqura').replace(/^[^،]*،\s*/, '') + ' — ' + fmt(f, 'gregory')
-    : 'من ' + fmt(f, 'islamic-umalqura') + ' إلى ' + fmt(t, 'islamic-umalqura') + ' (' + fmt(f, 'gregory') + ' — ' + fmt(t, 'gregory') + ')';
-  /* والفصلُ والأسبوعُ إن وقعت المدّةُ داخل فصلٍ واحد */
+/* نصُّ المدّة للتصدير (نصٌّ خالص) · وللشاشة periodUI: التاريخُ لا ينكسر في وسطه، والفصلُ والأسبوعُ كتلةٌ واحدة */
+function periodText(f, t) { var tw = termWeek(f, t); return periodBase(f, t, false) + (tw ? ' · ' + tw : ''); }
+function periodUI(f, t) { var tw = termWeek(f, t); return periodBase(f, t, true) + (tw ? ' · <span class="nw">' + tw + '</span>' : ''); }
+function periodBase(f, t, ui) {
+  var k = function (s) { return ui ? '<span class="nw">' + s + '</span>' : s; };
+  return f === t ? k(weekday(f) + ' ' + fmt(f, 'islamic-umalqura').replace(/^[^،]*،\s*/, '')) + ' — ' + k(fmt(f, 'gregory'))
+    : 'من ' + k(fmt(f, 'islamic-umalqura')) + ' إلى ' + k(fmt(t, 'islamic-umalqura')) + ' (' + k(fmt(f, 'gregory')) + ' — ' + k(fmt(t, 'gregory')) + ')';
+}
+/* والفصلُ والأسبوعُ إن وقعت المدّةُ داخل فصلٍ واحد */
+function termWeek(f, t) {
   var tf = termOf(f);
-  if (tf && t <= tf.to) {
-    var a = weekOf(f), b = weekOf(t);
-    s += ' · ' + tf.name + (a && b ? (a.n === b.n ? ' · الأسبوع ' + ar(a.n) : ' · الأسابيع ' + ar(a.n) + '–' + ar(b.n)) : '');
-  }
-  return s;
+  if (!tf || t > tf.to) return '';
+  var a = weekOf(f), b = weekOf(t);
+  return tf.name + (a && b ? (a.n === b.n ? ' · الأسبوع ' + ar(a.n) : ' · الأسابيع ' + ar(a.n) + '–' + ar(b.n)) : '');
 }
 
 /* غيرُ الحاضرين في المدّة: لكلّ معلّمٍ أيّامُه */
@@ -606,7 +621,7 @@ function followHtml() {
 
   if (!ONLY_LINE) h += '<section class="blue"><h2>انصراف مبكر — لأيّ موظف</h2><div class="inline"><select id="eln"><option value="">اختر الاسم…</option>' +
     R.names.map(function (n) { return '<option>' + esc(n) + '</option>'; }).join('') + '</select>' +
-    'وقت الانصراف <input type="time" id="elt" value="11:00"><button class="act main" data-early="1">حفظ</button></div></section>';
+    '<span class="grp">وقت الانصراف <input type="time" id="elt" value="11:00"><button class="act main" data-early="1">حفظ</button></span></div></section>';
 
   var news = cs.filter(function (c) { return c.status === 'مسجّلة' && c.kind !== 'غياب'; });
   h += '<section class="amber"><h2>الحالات (' + cs.length + ')' + (news.length ? '<button class="act main" data-issueall="1">إصدار المساءلات (' + news.length + ')</button>' : '') + '</h2>';
@@ -654,7 +669,7 @@ function approveHtml() {
 /* ===== مدّة الحسم — ١٨٠ دقيقة تنبيه · ٤٢٠ دقيقة حسمُ يوم (الدليل الإجرائي ص٣٢٦) ===== */
 function totalsHtml() {
   var h = '<div class="nav"><button class="print" data-print="1">طباعة</button><button data-export="totals-csv">Excel</button><button data-export="totals-doc">Word</button></div>';
-  h += '<p class="muted center">«المحسوم» ما قرّر المدير حسمه · «عند المدير» دقائق رُفعت إليه ولم يقرّرها بعد (تُجمع) · «الإجراء المستحقّ»: تنبيه عند 180 دقيقة (3 ساعات) وحسم يوم عن كلّ 420 دقيقة (7 ساعات) — يُدخل في «فارس»</p>';
+  h += '<p class="muted center">«المحسوم» ما قرّر المدير حسمه · «عند المدير» دقائق رُفعت إليه ولم يقرّرها بعد (تُجمع) · «الإجراء المستحقّ»: <span class="nw">تنبيه عند 180 دقيقة (3 ساعات)</span> و<span class="nw">حسم يوم عن كلّ 420 دقيقة (7 ساعات)</span> — يُدخل في «فارس»</p>';
   h += T.list.length ? totalsTable() : '<div class="empty">لا دقائق محسومة ولا معلّقة</div>';
   return h;
 }
@@ -682,7 +697,7 @@ function formsHtml() {
     return '<label class="item"><span><input type="checkbox" data-pick="' + c.id + '"' + (PICK[c.id] ? ' checked' : '') + '> ' + esc(c.name) +
       '<span class="pill ' + (STC[c.status] || '') + '">' + esc(c.status) + '</span><small>' + esc(weekday(c.date) + ' ' + hShort(c.date)) + ' · ' + caseLine(c) + '</small></span>' +
       '<button class="act" data-one="' + c.id + '">معاينة</button></label>';
-  }).join('') : '<p class="muted center">لا مساءلات صادرة في هذه المدّة — تُصدر من «متابعة الدوام»</p>';
+  }).join('') : '<p class="muted center">لا مساءلات صادرة في هذه المدّة — تُصدر من <span class="nw">«متابعة الدوام»</span></p>';
   h += '</section>';
   return h;
 }
