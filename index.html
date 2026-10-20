@@ -7,8 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="تحضير الطابور">
-<title>تحضير الطابور</title>
+<meta name="apple-mobile-web-app-title" content="متابعة الدوام">
+<title>متابعة الدوام</title>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icon-192.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -33,11 +33,11 @@
     if (m) k = decodeURIComponent(m[1]);
   }
   if (!k) {
-    document.body.innerHTML = '<div class="msg"><b>تحضير الطابور</b>افتح التطبيق من رابطك الخاصّ.</div>';
+    document.body.innerHTML = '<div class="msg"><b>متابعة الدوام</b>افتح التطبيق من رابطك الخاصّ.</div>';
     return;
   }
   var f = document.createElement('iframe');
-  f.title = 'تحضير الطابور';
+  f.title = 'متابعة الدوام';
   f.src = ENGINE + '?p=app&k=' + encodeURIComponent(k);
   document.body.appendChild(f);
 
