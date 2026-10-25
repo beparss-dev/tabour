@@ -1,5 +1,5 @@
 /* عاملُ الخدمة: يحفظ الغلافَ ليفتح بسرعة · والواجهةُ والبياناتُ من Apps Script مباشرةً ولا تُحفظ */
-var CACHE = 'tabour-v2';
+var CACHE = 'tabour-v3';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
